@@ -1,0 +1,117 @@
+.container {
+  padding: 40px;
+  max-width: 800px;
+  margin: 40px auto;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial;
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+/* Заголовки */
+.container h2 {
+  font-size: 1.8rem;
+  margin: 0 0 18px;
+  text-align: center;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+
+.container section {
+  background: linear-gradient(180deg, rgba(255,255,255,0.85), var(--card));
+  padding: 18px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(15,23,36,0.04);
+}
+
+/* Подзаголовки секций */
+.container h3 {
+  font-size: 1.05rem;
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px; /* пространство между флагом/эмодзи и текстом */
+}
+
+/* Основной текст и параграфы */
+.container p {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.98rem;
+}
+
+/* Списки */
+.container ul {
+  margin: 8px 0 0 18px;
+  padding: 0;
+  color: var(--text);
+}
+
+.container li {
+  margin-bottom: 8px;
+  line-height: 1.45;
+}
+
+/* Выделение важных частей (формулы, советы) */
+.container .highlight,
+.container em,
+.container strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Небольшие подсказки/примеры — визуально отделяем */
+.container section:nth-of-type(odd) {
+  border-left: 4px solid rgba(43,108,176,0.08);
+}
+
+/* Мелкие детали */
+.container small {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+/* Адаптив: мобильная версия */
+@media (max-width: 600px) {
+  .container {
+    padding: 18px;
+    margin: 18px auto;
+  }
+
+  .container h2 {
+    font-size: 1.4rem;
+    margin-bottom: 12px;
+  }
+
+  .container h3 {
+    font-size: 0.98rem;
+    gap: 6px;
+  }
+
+  .container section {
+    padding: 12px;
+    border-radius: calc(var(--radius) - 2px);
+    margin-bottom: 12px;
+  }
+
+  .container ul {
+    margin-left: 14px;
+  }
+
+  .container p,
+  .container li {
+    font-size: 0.95rem;
+  }
+}
+
+/* Поддержка тёмной темы (опционально) */
+@media (prefers-color-scheme: dark) {
+
+  .container section {
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+}
