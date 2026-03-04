@@ -1,48 +1,27 @@
 "use client";
 
-import { ComponentType, useEffect } from "react";
+import { useEffect, useState, ComponentType } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
 
-type Role = "student" | "teacher";
-
-interface Options {
-  requiredRole?: Role;
-}
-
-export function withAuth<P>(
-  WrappedComponent: ComponentType<P>,
-  options?: Options
-) {
-  return function ProtectedComponent(props: P) {
-    const { user, loading } = useAuth();
+export function withAuth<T extends object>(WrappedComponent: ComponentType<T>) {
+  return function ProtectedComponent(props: T) {
     const router = useRouter();
+    const [isAuthorized, setIsAuthorized] = useState(false);
 
     useEffect(() => {
-      if (!loading) {
-        if (!user) {
-          router.replace("/login");
-          return;
-        }
+      const isLoggedIn = localStorage.getItem("isLoggedIn");
 
-        if (options?.requiredRole && user.role !== options.requiredRole) {
-          router.replace("/");
-        }
+      if (!isLoggedIn) {
+        router.push("/login");
+      } else {
+        setIsAuthorized(true);
       }
-    }, [user, loading, router]);
+    }, [router]);
 
-    if (loading || !user) {
-      return (
-        <div style={{ padding: 40 }}>
-          <h2>Загрузка...</h2>
-        </div>
-      );
-    }
-
-    if (options?.requiredRole && user.role !== options.requiredRole) {
+    if (!isAuthorized) {
       return null;
     }
 
-    return <WrappedComponent {...props} />;
+    return <WrappedComponent {...(props as T)} />;
   };
 }
