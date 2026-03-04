@@ -10,7 +10,6 @@
   word-break: break-word;
 }
 
-/* Заголовки */
 .container h2 {
   font-size: 1.8rem;
   margin: 0 0 18px;
@@ -28,16 +27,14 @@
   border: 1px solid rgba(15,23,36,0.04);
 }
 
-/* Подзаголовки секций */
 .container h3 {
   font-size: 1.05rem;
   margin: 0 0 10px;
   display: flex;
   align-items: center;
-  gap: 8px; /* пространство между флагом/эмодзи и текстом */
+  gap: 8px; 
 }
 
-/* Основной текст и параграфы */
 .container p {
   margin: 0 0 10px;
   color: var(--muted);
@@ -56,7 +53,6 @@
   line-height: 1.45;
 }
 
-/* Выделение важных частей (формулы, советы) */
 .container .highlight,
 .container em,
 .container strong {
@@ -64,18 +60,15 @@
   font-weight: 600;
 }
 
-/* Небольшие подсказки/примеры — визуально отделяем */
 .container section:nth-of-type(odd) {
   border-left: 4px solid rgba(43,108,176,0.08);
 }
 
-/* Мелкие детали */
 .container small {
   color: #6b7280;
   font-size: 0.85rem;
 }
 
-/* Адаптив: мобильная версия */
 @media (max-width: 600px) {
   .container {
     padding: 18px;
@@ -108,7 +101,6 @@
   }
 }
 
-/* Поддержка тёмной темы (опционально) */
 @media (prefers-color-scheme: dark) {
 
   .container section {

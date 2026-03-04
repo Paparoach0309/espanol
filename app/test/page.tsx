@@ -1,10 +1,12 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { exercises } from "../../data/exercises";
 import { useSubjuntivo } from "../../context/SubjuntivoContext";
 
 export default function TestMode() {
-  const { increaseScore } = useSubjuntivo();
+  const { completeQuestion } = useSubjuntivo();
+
   const [time, setTime] = useState(60);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -23,9 +25,11 @@ export default function TestMode() {
   const current = exercises[index];
 
   const check = () => {
-    if (answer.trim().toLowerCase() === current.correct) {
-      increaseScore();
-    }
+    const isCorrect =
+      answer.trim().toLowerCase() === current.correct.trim().toLowerCase();
+
+    completeQuestion(current.id, isCorrect);
+
     setAnswer("");
     setIndex((i) => (i + 1) % exercises.length);
   };
@@ -35,7 +39,9 @@ export default function TestMode() {
       <h2>Modo Test — Tiempo: {time}s</h2>
 
       <p>{current.question}</p>
+
       <input value={answer} onChange={(e) => setAnswer(e.target.value)} />
+
       <button onClick={check}>Responder</button>
     </div>
   );
