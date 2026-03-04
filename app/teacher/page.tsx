@@ -3,6 +3,4 @@
 import { withAuth } from "../hoc/withAuth";
 import TeacherPanel from "./TeacherPanel";
 
-export default withAuth(TeacherPanel, {
-  requiredRole: "teacher",
-});
+export default withAuth(TeacherPanel);
