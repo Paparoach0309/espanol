@@ -5,7 +5,7 @@ import { exercises } from "../../data/exercises";
 import styles from "./test.module.css";
 
 const TEST_SIZE = 10;
-const TEST_TIME = 60;
+const TEST_TIME = 300;
 
 export default function TestMode() {
   const [mounted, setMounted] = useState(false);

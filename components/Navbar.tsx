@@ -10,6 +10,7 @@ export default function Navbar() {
       <Link href="/formacion">Formación</Link>
       <Link href="/ejercicios">Ejercicios</Link>
       <Link href="/test">Test</Link>
+      <Link href="/juego">Huego</Link>
     </nav>
   );
 }
