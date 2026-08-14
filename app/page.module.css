@@ -74,3 +74,31 @@
   opacity: 0.8;
   font-size: 15px;
 }
+
+@media (max-width: 600px) {
+  .main {
+    padding: 36px 16px;
+  }
+
+  .hero h1 {
+    font-size: 28px;
+  }
+
+  .hero p {
+    font-size: 16px;
+  }
+
+  .buttons {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .buttons a {
+    display: block;
+    text-align: center;
+  }
+
+  .sections {
+    grid-template-columns: 1fr;
+  }
+}

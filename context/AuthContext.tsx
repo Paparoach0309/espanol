@@ -2,85 +2,151 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
+import {
+  ensureSeeded,
+  findUser,
+  hashPassword,
+  isExpired,
+  STORAGE_USERS_KEY,
+  StoredUser,
+} from "../lib/usersStore";
 
 type Role = "student" | "teacher";
 
 interface User {
   username: string;
   role: Role;
-  version: string;
 }
 
-interface InternalUser extends User {
-  password: string;
+interface Session {
+  version: string;
+  username: string;
+  role: Role;
+  sessionVersion: number;
+  expiresAt: number | null;
 }
+
+type LoginResult = "ok" | "invalid" | "expired";
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => boolean;
+  login: (username: string, password: string) => Promise<LoginResult>;
   logout: () => void;
   loading: boolean;
 }
 
-const USERS: InternalUser[] = [
-  { username: "student1", password: "1234", role: "student", version: "v2" },
-  { username: "teacher1", password: "admin", role: "teacher", version: "v2" },
-];
-const AUTH_VERSION = "v1";
+const SESSION_KEY = "auth-user";
+const SESSION_VERSION = "v2";
+
 const AuthContext = createContext<AuthContextType | null>(null);
+
+function isSessionValid(session: Session, user: StoredUser | undefined): boolean {
+  if (!user) return false;
+  if (session.sessionVersion !== user.sessionVersion) return false;
+  if (isExpired(user)) return false;
+  if (session.expiresAt !== null && Date.now() > session.expiresAt) return false;
+  return true;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    const stored = localStorage.getItem("auth-user");
-
-    if (stored) {
-      const parsed: User = JSON.parse(stored);
-
-      if (parsed.version === AUTH_VERSION) {
-        setUser(parsed);
-      } else {
-        localStorage.removeItem("auth-user");
-      }
+  const validateSession = useCallback(() => {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) {
+      setUser(null);
+      return;
     }
 
-    setLoading(false);
+    try {
+      const session: Session = JSON.parse(raw);
+
+      if (session.version !== SESSION_VERSION) {
+        throw new Error("session version mismatch");
+      }
+
+      const stored = findUser(session.username);
+
+      if (isSessionValid(session, stored)) {
+        setUser({ username: stored!.username, role: stored!.role });
+      } else {
+        setUser(null);
+        localStorage.removeItem(SESSION_KEY);
+      }
+    } catch {
+      setUser(null);
+      localStorage.removeItem(SESSION_KEY);
+    }
   }, []);
 
-  const login = (username: string, password: string) => {
-    const found = USERS.find(
-      (u) => u.username === username && u.password === password
-    );
+  useEffect(() => {
+    let cancelled = false;
 
-    if (!found) return false;
+    (async () => {
+      await ensureSeeded();
+      if (cancelled) return;
+      validateSession();
+      setLoading(false);
+    })();
 
-    const userData: User = {
-      username: found.username,
-      role: found.role,
-      version: "v2",
+    // Если учитель в другой вкладке изменил креды или удалил студента,
+    // сессия студента инвалидируется автоматически.
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_USERS_KEY || e.key === SESSION_KEY) {
+        validateSession();
+      }
     };
 
-    setUser(userData);
-    localStorage.setItem(
-      "auth-user",
-      JSON.stringify({ ...userData, version: AUTH_VERSION })
-    );
-    router.push("/");
-    return true;
+    const handleFocus = () => validateSession();
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [validateSession]);
+
+  const login = async (
+    username: string,
+    password: string
+  ): Promise<LoginResult> => {
+    await ensureSeeded();
+    const stored = findUser(username);
+
+    if (!stored) return "invalid";
+    if (isExpired(stored)) return "expired";
+
+    const inputHash = await hashPassword(stored.username, password);
+    if (inputHash !== stored.passwordHash) return "invalid";
+
+    const session: Session = {
+      version: SESSION_VERSION,
+      username: stored.username,
+      role: stored.role,
+      sessionVersion: stored.sessionVersion,
+      expiresAt: stored.expiresAt,
+    };
+
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    setUser({ username: stored.username, role: stored.role });
+    return "ok";
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("auth-user");
+    localStorage.removeItem(SESSION_KEY);
     router.push("/login");
   };
 

@@ -340,4 +340,14 @@
   .resultBox {
     padding: 14px;
   }
+
+  .card input,
+  .quizCard input {
+    font-size: 16px;
+  }
+
+  .option {
+    font-size: 15px;
+    padding: 11px 12px;
+  }
 }
