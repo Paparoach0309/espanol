@@ -1,8 +1,8 @@
 "use client";
 
-import { exercises } from "../../data/exercises";
-import { useSubjuntivo } from "../../context/SubjuntivoContext";
-import ProgressBar from "../../components/ProgressBar";
+import { exercises } from "../../../data/exercises";
+import { useSubjuntivo } from "../../../context/SubjuntivoContext";
+import ProgressBar from "../../../components/ProgressBar";
 import styles from "./ejercicios.module.css";
 import ExerciseCard from "@/components/ExerciseCard";
 

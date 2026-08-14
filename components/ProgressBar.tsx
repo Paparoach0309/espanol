@@ -1,6 +1,6 @@
 "use client";
 import { useSubjuntivo } from "../context/SubjuntivoContext";
-import styles from "../app/ejercicios/ejercicios.module.css";
+import styles from "../app/subjuntivo/ejercicios/ejercicios.module.css";
 
 export default function ProgressBar() {
   const { completed, total } = useSubjuntivo();

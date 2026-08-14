@@ -7,37 +7,45 @@ function Home() {
   return (
     <main className={styles.main}>
       <section className={styles.hero}>
-        <h1>Domina el Subjuntivo — Nivel B1</h1>
+        <h1>Aprende Español</h1>
         <p>
-          Aprende a usar el subjuntivo con seguridad en situaciones reales:
-          opiniones, emociones, hipótesis y estructuras complejas.
+          Выберите свой уровень: начните с базовой грамматики уровня A1 или
+          переходите к уверенному использованию Subjuntivo уровня B1.
         </p>
 
         <div className={styles.buttons}>
-          <Link href="/explicacion" className={styles.primary}>
-            Empezar teoría
+          <Link href="/a1" className={styles.primary}>
+            🟢 Nivel A1
           </Link>
-          <Link href="/ejercicios" className={styles.secondary}>
-            Practicar ahora
+          <Link href="/subjuntivo" className={styles.secondary}>
+            🔵 Subjuntivo B1
           </Link>
         </div>
       </section>
 
-      <section className={styles.features}>
-        <div>
-          <h3>📚 Explicación clara</h3>
-          <p>Teoría estructurada con ejemplos reales de uso.</p>
-        </div>
+      <section className={styles.sections}>
+        <Link href="/a1" className={styles.sectionCard}>
+          <h3>🟢 Уровень A1 — Español básico</h3>
+          <p>
+            Существительные и род, прилагательные, артикли, личные местоимения,
+            предлоги, глагол ser/estar и итоговые тесты.
+          </p>
+        </Link>
 
-        <div>
-          <h3>🧠 Formación paso a paso</h3>
-          <p>Aprende cómo se forma y domina los verbos irregulares.</p>
-        </div>
+        <Link href="/subjuntivo" className={styles.sectionCard}>
+          <h3>🔵 Уровень B1 — Subjuntivo</h3>
+          <p>
+            Теория, образование форм, 30+ упражнений и тест-симулякр по
+            субхунтиво.
+          </p>
+        </Link>
 
-        <div>
-          <h3>🎯 30+ ejercicios B1</h3>
-          <p>Practica con situaciones reales del nivel intermedio.</p>
-        </div>
+        <Link href="/juego" className={styles.sectionCard}>
+          <h3>🧩 Игра «Собери предложение»</h3>
+          <p>
+            Начальные предложения: собери слова в правильном порядке перетаскиванием.
+          </p>
+        </Link>
       </section>
     </main>
   );

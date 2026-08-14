@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSubjuntivo } from "../context/SubjuntivoContext";
-import styles from "../app/ejercicios/ejercicios.module.css";
+import styles from "../app/subjuntivo/ejercicios/ejercicios.module.css";
 
 interface Props {
   id: string;

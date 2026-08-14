@@ -381,7 +381,7 @@ export default function JuegoOraciones() {
             </div>
           ))}
           {pool.length === 0 && (
-            <div className={styles.poolEmpty}>Пул пуст</div>
+            <div className={styles.poolEmpty}>Список пуст</div>
           )}
         </div>
 
