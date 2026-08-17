@@ -9,28 +9,11 @@ import {
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ensureSeeded,
-  findUser,
-  hashPassword,
-  isExpired,
-  STORAGE_USERS_KEY,
-  StoredUser,
-} from "../lib/usersStore";
-
-type Role = "student" | "teacher";
+import { Role } from "../lib/usersStore";
 
 interface User {
   username: string;
   role: Role;
-}
-
-interface Session {
-  version: string;
-  username: string;
-  role: Role;
-  sessionVersion: number;
-  expiresAt: number | null;
 }
 
 type LoginResult = "ok" | "invalid" | "expired";
@@ -42,17 +25,16 @@ interface AuthContextType {
   loading: boolean;
 }
 
-const SESSION_KEY = "auth-user";
-const SESSION_VERSION = "v2";
-
 const AuthContext = createContext<AuthContextType | null>(null);
 
-function isSessionValid(session: Session, user: StoredUser | undefined): boolean {
-  if (!user) return false;
-  if (session.sessionVersion !== user.sessionVersion) return false;
-  if (isExpired(user)) return false;
-  if (session.expiresAt !== null && Date.now() > session.expiresAt) return false;
-  return true;
+async function parseLoginError(res: Response): Promise<LoginResult> {
+  try {
+    const body = (await res.json()) as { error?: string };
+    if (body.error === "expired") return "expired";
+  } catch {
+    // ignore
+  }
+  return "invalid";
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -60,31 +42,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const validateSession = useCallback(() => {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (!raw) {
-      setUser(null);
-      return;
-    }
-
+  const validateSession = useCallback(async () => {
     try {
-      const session: Session = JSON.parse(raw);
-
-      if (session.version !== SESSION_VERSION) {
-        throw new Error("session version mismatch");
-      }
-
-      const stored = findUser(session.username);
-
-      if (isSessionValid(session, stored)) {
-        setUser({ username: stored!.username, role: stored!.role });
+      const res = await fetch("/api/auth/me", { credentials: "same-origin" });
+      if (res.ok) {
+        const body = (await res.json()) as { user: User };
+        setUser(body.user);
       } else {
         setUser(null);
-        localStorage.removeItem(SESSION_KEY);
       }
     } catch {
       setUser(null);
-      localStorage.removeItem(SESSION_KEY);
     }
   }, []);
 
@@ -92,28 +60,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     (async () => {
-      await ensureSeeded();
+      await validateSession();
       if (cancelled) return;
-      validateSession();
       setLoading(false);
     })();
 
     // Если учитель в другой вкладке изменил креды или удалил студента,
-    // сессия студента инвалидируется автоматически.
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_USERS_KEY || e.key === SESSION_KEY) {
-        validateSession();
-      }
+    // сессия студента инвалидируется на сервере — перепроверяем при фокусе.
+    const handleFocus = () => {
+      void validateSession();
     };
 
-    const handleFocus = () => validateSession();
-
-    window.addEventListener("storage", handleStorage);
     window.addEventListener("focus", handleFocus);
 
     return () => {
       cancelled = true;
-      window.removeEventListener("storage", handleStorage);
       window.removeEventListener("focus", handleFocus);
     };
   }, [validateSession]);
@@ -122,31 +83,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     username: string,
     password: string
   ): Promise<LoginResult> => {
-    await ensureSeeded();
-    const stored = findUser(username);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ username, password }),
+      });
 
-    if (!stored) return "invalid";
-    if (isExpired(stored)) return "expired";
+      if (res.ok) {
+        const body = (await res.json()) as { user: User };
+        setUser(body.user);
+        return "ok";
+      }
 
-    const inputHash = await hashPassword(stored.username, password);
-    if (inputHash !== stored.passwordHash) return "invalid";
-
-    const session: Session = {
-      version: SESSION_VERSION,
-      username: stored.username,
-      role: stored.role,
-      sessionVersion: stored.sessionVersion,
-      expiresAt: stored.expiresAt,
-    };
-
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    setUser({ username: stored.username, role: stored.role });
-    return "ok";
+      return await parseLoginError(res);
+    } catch {
+      return "invalid";
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
     setUser(null);
-    localStorage.removeItem(SESSION_KEY);
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+    } catch {
+      // сессию всё равно сбрасываем локально
+    }
     router.push("/login");
   };
 

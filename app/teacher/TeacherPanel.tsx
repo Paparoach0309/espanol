@@ -1,22 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import {
-  createUser,
-  deleteUser,
-  formatExpiry,
-  getUsers,
-  isExpired,
-  renewUser,
-  updateUser,
-  StoredUser,
-} from "../../lib/usersStore";
+import { formatExpiry, isExpired, PublicUser } from "../../lib/usersStore";
 import styles from "./teacher.module.css";
+
+async function api<T = unknown>(
+  path: string,
+  init?: RequestInit
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (init?.headers) {
+    Object.assign(headers, init.headers);
+  }
+
+  const res = await fetch(path, {
+    ...init,
+    headers,
+    credentials: "same-origin",
+  });
+
+  let body: unknown = {};
+  try {
+    body = await res.json();
+  } catch {
+    // ignore
+  }
+
+  if (!res.ok) {
+    const msg =
+      (body as { error?: string })?.error ?? "Ошибка сервера, попробуйте ещё раз";
+    throw new Error(msg);
+  }
+
+  return body as T;
+}
 
 export default function TeacherPanel() {
   const { user, logout } = useAuth();
-  const [users, setUsers] = useState<StoredUser[]>(() => getUsers());
+  const [users, setUsers] = useState<PublicUser[]>([]);
 
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -30,7 +54,18 @@ export default function TeacherPanel() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const refresh = () => setUsers(getUsers());
+  const refresh = useCallback(async () => {
+    try {
+      const body = await api<{ users: PublicUser[] }>("/api/users");
+      setUsers(body.users);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   const handleCreate = async () => {
     if (!newUsername.trim() || !newPassword.trim()) {
@@ -38,26 +73,29 @@ export default function TeacherPanel() {
       return;
     }
     const days = Number(newDays) || 30;
-    const res = await createUser({
-      username: newUsername.trim(),
-      password: newPassword,
-      role: "student",
-      validityDays: days,
-    });
-    if (!res.ok) {
-      setError(res.error);
-      return;
+    try {
+      await api("/api/users", {
+        method: "POST",
+        body: JSON.stringify({
+          username: newUsername.trim(),
+          password: newPassword,
+          role: "student",
+          validityDays: days,
+        }),
+      });
+      setError("");
+      setMessage(
+        `Студент «${newUsername.trim()}» создан (срок ${days} дней). Логин и пароль можно передать студенту.`
+      );
+      setNewUsername("");
+      setNewPassword("");
+      await refresh();
+    } catch (e) {
+      setError((e as Error).message);
     }
-    setError("");
-    setMessage(
-      `Студент «${newUsername.trim()}» создан (срок ${days} дней). Логин и пароль можно передать студенту.`
-    );
-    setNewUsername("");
-    setNewPassword("");
-    refresh();
   };
 
-  const startEdit = (u: StoredUser) => {
+  const startEdit = (u: PublicUser) => {
     setEditing(u.username);
     setEditUsername(u.username);
     setEditPassword("");
@@ -73,45 +111,67 @@ export default function TeacherPanel() {
       patch.password = editPassword;
     }
 
-    if (Object.keys(patch).length > 0) {
-      const res = await updateUser(oldUsername, patch);
-      if (!res.ok) {
-        setError(res.error);
-        return;
+    try {
+      if (Object.keys(patch).length > 0) {
+        await api("/api/users/" + encodeURIComponent(oldUsername), {
+          method: "PATCH",
+          body: JSON.stringify(patch),
+        });
+        setMessage("Креды изменены — активная сессия пользователя будет сброшена.");
       }
-      setMessage(
-        "Креды изменены — активная сессия пользователя будет сброшена."
-      );
-    }
 
-    const days = Number(editDays);
-    if (days > 0) {
-      renewUser(patch.username || oldUsername, days);
-      setMessage((m) => `${m} Срок продлён на ${days} дней.`);
-    }
+      const days = Number(editDays);
+      if (days > 0) {
+        const target = patch.username || oldUsername;
+        await api(
+          "/api/users/" + encodeURIComponent(target) + "/renew",
+          {
+            method: "POST",
+            body: JSON.stringify({ days }),
+          }
+        );
+        setMessage((m) => `${m} Срок продлён на ${days} дней.`);
+      }
 
-    setEditing(null);
-    refresh();
+      setEditing(null);
+      setError("");
+      await refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    }
   };
 
-  const handleDelete = (username: string) => {
+  const handleDelete = async (username: string) => {
     if (username === user?.username) {
       setError("Нельзя удалить свой собственный аккаунт");
       return;
     }
     if (!window.confirm(`Удалить пользователя «${username}»?`)) return;
-    deleteUser(username);
-    setMessage(`Пользователь «${username}» удалён`);
-    refresh();
+    try {
+      await api("/api/users/" + encodeURIComponent(username), {
+        method: "DELETE",
+      });
+      setMessage(`Пользователь «${username}» удалён`);
+      await refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    }
   };
 
-  const handleRenew = (username: string) => {
-    renewUser(username, 30);
-    setMessage(`Срок для «${username}» продлён на 30 дней`);
-    refresh();
+  const handleRenew = async (username: string) => {
+    try {
+      await api("/api/users/" + encodeURIComponent(username) + "/renew", {
+        method: "POST",
+        body: JSON.stringify({ days: 30 }),
+      });
+      setMessage(`Срок для «${username}» продлён на 30 дней`);
+      await refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    }
   };
 
-  const renderRow = (u: StoredUser) => {
+  const renderRow = (u: PublicUser) => {
     const isSelf = u.username === user?.username;
     const expired = isExpired(u);
 

@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Subjuntivo Landing (Next.js)
 
-## Getting Started
+Сайт для курса испанского: посадочные, упражнения A1 и Subjuntivo B1, личный кабинет студента и панель преподавателя.
 
-First, run the development server:
+## Аутентификация и данные
+
+Авторизация серверная: пароли хранятся в Postgres и хешируются bcrypt (`lib/password.ts`),
+сессии — httpOnly-cookie `subjuntivo_session` (`lib/session.ts`), localStorage для
+логина/паролей не используется. Все операции с пользователями идут через API-роуты
+`app/api/*`, а панель учителя дополнительно защищается на сервере (`app/teacher/layout.tsx`).
+
+### 1. Настройка базы данных
+
+Создай бесплатную базу Postgres: [Neon](https://neon.tech) / [Supabase](https://supabase.com).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local   # и впиши DATABASE_URL
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- `DATABASE_URL` — строка подключения (в проде, у Vercel, задай её в Environment Variables).
+- `DATABASE_SSL=false` — только если БД работает без SSL (например, локальный Postgres).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Таблицы `users` и `sessions` создаются автоматически при первом обращении к API.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+### 2. Стартовые аккаунты (сид)
 
-## Learn More
+При пустой БД создаются автоматически:
 
-To learn more about Next.js, take a look at the following resources:
+| Логин      | Пароль  | Роль     | Срок     |
+|------------|---------|----------|----------|
+| `teacher1` | `admin` | teacher  | бессрочно |
+| `student1` | `1234`  | student  | 30 дней  |
+| `svetlana` | `12345` | student  | 30 дней  |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 3. Как работают доступы
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+- Учитель заводит студента в панели `/teacher`: `логин + пароль + срок (дней, по умолчанию 30)`.
+  По истечении срока вход студента блокируется («Срок действия истёк»), активные сессии инвалидируются.
+- Продление — кнопка «+30 дней» или поле «Продлить на дней» в режиме редактирования.
+- Смена логина/пароля сбрасывает активные сессии этого пользователя (increment `session_version`).
+- Аккаунт учителя бессрочный. Удалить собственный аккаунт нельзя.
 
-## Deploy on Vercel
+### 4. API
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout` — сессия студента/учителя.
+- `POST /api/auth/register` — самостоятельная регистрация студента (30 дней).
+- `GET|POST /api/users`, `PATCH|DELETE /api/users/[username]`,
+  `POST /api/users/[username]/renew` — управление пользователями (доступно только учителю).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## Разработка
+
+```bash
+npm install
+npm run dev
+```
+
+## Деплой на Vercel
+
+1. Подключи репозиторий в Vercel.
+2. Добавь в Environment Variables `DATABASE_URL` (и `DATABASE_SSL` при необходимости).
+3. Deploy — автоматически. Сиды и схема БД инициализируются при первом обращении к API.
