@@ -27,6 +27,36 @@ const MODULES = [
     desc: "yo, tú, él, ella, nosotros… Правило и упражнение.",
   },
   {
+    href: "/a1/verbos-regulares",
+    emoji: "🔤",
+    title: "Правильные глаголы + tener, ir, oír",
+    desc: "Спряжение -ar, -er, -ir, глаголы tener, ir, oír. Правило, примеры, упражнения и тест на 10 заданий.",
+  },
+  {
+    href: "/a1/demostrativos",
+    emoji: "👉",
+    title: "Указательные местоимения и наречия",
+    desc: "este, ese, aquel, aquí, ahí, allí. Правило, примеры, упражнения и тест на 10 заданий.",
+  },
+  {
+    href: "/a1/posesivos",
+    emoji: "🔑",
+    title: "Притяжательные местоимения",
+    desc: "mi, tu, su, nuestro, mío, tuyo… Правило, примеры, упражнения и тест на 10 заданий.",
+  },
+  {
+    href: "/a1/interrogativos",
+    emoji: "❓",
+    title: "Вопросительные предложения",
+    desc: "qué, quién, dónde, cuándo, cómo, por qué. Правило, примеры, упражнения и тест на 10 заданий.",
+  },
+  {
+    href: "/a1/verbos-presente",
+    emoji: "🔄",
+    title: "Presente: querer, poder, venir, decir",
+    desc: "Глаголы с чередованием в настоящем времени. Правило, примеры, упражнения и тест на 10 заданий.",
+  },
+  {
     href: "/a1/test-4temas",
     emoji: "📝",
     title: "Тест по 4 темам",
